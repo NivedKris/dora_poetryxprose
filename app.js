@@ -128,7 +128,7 @@
     state.data = jsonData;
     elements.statusBadge.textContent = `Loaded (${sourceName})`;
     elements.statusBadge.className = 'status-badge';
-    d
+
     // Render metadata
     if (jsonData.meta) {
       const bModel = jsonData.meta.base_model || 'google/gemma-4-E4B';
