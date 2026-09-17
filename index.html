@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemma-4-E4B DoRA Geometric Analysis Suite</title>
+  <meta name="description" content="Comprehensive interactive geometric and representation analysis dashboard for Weight-Decomposed Low-Rank Adaptation (DoRA) on google/gemma-4-E4B.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-badge">
+          <span class="pulse-dot"></span>
+          <span>DoRA Geometric Analysis Suite</span>
+        </div>
+        <h1 class="brand-title">Gemma-4-E4B Empirical Representation Explorer</h1>
+        <p class="brand-subtitle">
+          Weight-Decomposed Low-Rank Adaptation ($r=16, \alpha=32$) across 4 dual-half domain splits on NVIDIA H100
+        </p>
+      </div>
+      <div class="header-right">
+        <div class="meta-pill-group">
+          <div class="meta-pill">
+            <span class="meta-label">Base Model</span>
+            <span class="meta-value" id="header-base-model">google/gemma-4-E4B</span>
+          </div>
+          <div class="meta-pill">
+            <span class="meta-label">Param Count</span>
+            <span class="meta-value" id="header-param-count">7.996B (~15.25 GB)</span>
+          </div>
+          <div class="meta-pill">
+            <span class="meta-label">Projections</span>
+            <span class="meta-value" id="header-projections">294 Modules (42 Layers)</span>
+          </div>
+          <div class="meta-pill">
+            <span class="meta-label">Status</span>
+            <span class="status-badge" id="data-status-badge">Loaded (29,619 Lines)</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="tab-overview" id="nav-btn-overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Executive Overview
+        </button>
+        <button class="nav-tab" data-tab="tab-module1" id="nav-btn-module1">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+          M1: Decoupling Dynamics
+        </button>
+        <button class="nav-tab" data-tab="tab-module2" id="nav-btn-module2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          M2: Rank Inflation & BoRA
+        </button>
+        <button class="nav-tab" data-tab="tab-module3" id="nav-btn-module3">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7.5" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+          M3: Within-Domain Stability
+        </button>
+        <button class="nav-tab" data-tab="tab-module4" id="nav-btn-module4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          M4: Cross-Domain Divergence
+        </button>
+        <button class="nav-tab" data-tab="tab-module5" id="nav-btn-module5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          M5: Two-Way Grouping
+        </button>
+        <button class="nav-tab" data-tab="tab-explorer" id="nav-btn-explorer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          294 Layer Explorer
+        </button>
+        <button class="nav-tab" data-tab="tab-math" id="nav-btn-math">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          Formulas & Math
+        </button>
+      </div>
+      <div class="nav-actions">
+        <label class="file-upload-btn" title="Load custom dora_analysis_metrics.json">
+          <input type="file" id="json-file-input" accept=".json">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Load Metrics JSON
+        </label>
+      </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="app-main">
+
+      <!-- ==================== TAB 1: OVERVIEW ==================== -->
+      <section class="tab-content active" id="tab-overview">
+        <div class="section-hero">
+          <div class="hero-content">
+            <span class="hero-tag">Executive Summary</span>
+            <h2 class="hero-title">DoRA Fine-Tuning Performance & Convergence</h2>
+            <p class="hero-desc">
+              Four DoRA models fine-tuned on NVIDIA H100 80GB SXM5 GPUs for 2 epochs using effective batch size 16 (`per_device=4`, `accum=4`), AdamW, and stabilized learning rate `5e-5` with cosine annealing.
+            </p>
+          </div>
+          <div class="hero-meta-grid">
+            <div class="hero-stat-card">
+              <span class="stat-label">Total Linear Projections</span>
+              <span class="stat-num" id="stat-total-projections">294</span>
+              <span class="stat-sub">42 Layers &times; 7 Module Types</span>
+            </div>
+            <div class="hero-stat-card">
+              <span class="stat-label">Base Model Architecture</span>
+              <span class="stat-num">PLE + MHA</span>
+              <span class="stat-sub">Gemma 4 Per-Layer Embeddings</span>
+            </div>
+            <div class="hero-stat-card">
+              <span class="stat-label">Mean Rank Inflation</span>
+              <span class="stat-num" id="stat-rank-inflation">~94&times;</span>
+              <span class="stat-sub">$r_{\text{eff}}(\Delta W) \gg r_{\text{eff}}(\Delta V)$</span>
+            </div>
+            <div class="hero-stat-card">
+              <span class="stat-label">Cross/Within Cosine Ratio</span>
+              <span class="stat-num">45.86%</span>
+              <span class="stat-sub">Preserved Geometric Alignment</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Model Summary Cards Grid -->
+        <h3 class="subsection-title">Experimental Splits & Training Benchmarks</h3>
+        <div class="benchmark-cards-grid" id="benchmark-cards-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Milestone Trajectory Section -->
+        <div class="card card-wide mt-6">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Milestone Generalization Trajectory (25%, 50%, 75%, 100%)</h3>
+              <p class="card-desc">Tracking validation loss and perplexity (PPL) progression across training steps</p>
+            </div>
+            <div class="badge badge-accent">Cosine Annealed LR</div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table" id="milestone-table">
+                <thead>
+                  <tr>
+                    <th>Model Split</th>
+                    <th>Task & Direction</th>
+                    <th>25% Step (PPL)</th>
+                    <th>50% Step (PPL)</th>
+                    <th>75% Step (PPL)</th>
+                    <th>100% Final (PPL)</th>
+                    <th>Eval Loss Delta</th>
+                  </tr>
+                </thead>
+                <tbody id="milestone-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Linguistic Scopes Explanation -->
+        <div class="grid grid-2 mt-6">
+          <div class="info-callout">
+            <div class="callout-header">
+              <span class="callout-icon">&#x1F4DC;</span>
+              <h4>Poetry Domain: Classical Verse ($\text{sa} \to \text{hi}$)</h4>
+            </div>
+            <p>
+              Unidirectional classical Sanskrit verse shlokas into Hindi. The full raw corpus comprises <strong>74,941 verse pairs</strong> (59,895 train + 7,556 val + 7,490 held-out test). Partitioned into dual 50% splits:
+            </p>
+            <ul class="bullet-list mt-3">
+              <li><strong>Raw Corpus Size:</strong> 74,941 total verse pairs (37,471 in Half 1, 37,470 in Half 2).</li>
+              <li><strong>Active Train Instances:</strong> 29,948 (Half 1) and 29,947 (Half 2) [Total train: 59,895].</li>
+              <li><strong>Validation Instances:</strong> 3,778 (Half 1) and 3,778 (Half 2) [Total val: 7,556].</li>
+              <li><strong>Held-Out Test:</strong> 7,490 pairs reserved un-trained.</li>
+            </ul>
+            <div class="tag-row mt-3">
+              <span class="tag">Unidirectional (1x)</span>
+              <span class="tag">74,941 Raw Pairs</span>
+              <span class="tag">67,451 Train+Val</span>
+            </div>
+          </div>
+          <div class="info-callout">
+            <div class="callout-header">
+              <span class="callout-icon">&#x1F4D6;</span>
+              <h4>Prose Domain: Contemporary Bidirectional ($\text{sa} \leftrightarrow \text{hi}$)</h4>
+            </div>
+            <p>
+              Bidirectional contemporary Sanskrit &harr; Hindi prose sourced from Samanantar, BPCC, Flores, and IN22. The raw corpus comprises <strong>173,853 parallel sentence pairs</strong> (169,993 train pairs + 3,860 test pairs).
+            </p>
+            <ul class="bullet-list mt-3">
+              <li><strong>Raw Corpus Size:</strong> 173,853 parallel sentence pairs (86,928 in Half 1, 86,925 in Half 2).</li>
+              <li><strong>Bidirectional 2x Expansion:</strong> Every pair generates both $\text{sa} \to \text{hi}$ and $\text{hi} \to \text{sa}$ samples.</li>
+              <li><strong>Active Train Instances:</strong> 84,997 pairs &times; 2 = <strong>169,994</strong> (Half 1) and 84,996 pairs &times; 2 = <strong>169,992</strong> (Half 2).</li>
+              <li><strong>Total Bidirectional Train Instances:</strong> 339,986 training samples across both halves.</li>
+            </ul>
+            <div class="tag-row mt-3">
+              <span class="tag">Bidirectional (2x)</span>
+              <span class="tag">173,853 Raw Pairs</span>
+              <span class="tag">339,986 Train Samples</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: MODULE 1 ==================== -->
+      <section class="tab-content" id="tab-module1">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Module 1 Diagnostics</span>
+            <h2 class="section-title">Core DoRA Decoupling Dynamics ($\Delta M$ vs $\Delta D$)</h2>
+            <p class="section-desc">
+              DoRA decomposes weight updates into magnitude vector $m$ and directional matrix $V$. Disaggregated per-module Pearson and Spearman correlations confirm whether learning decouples direction from magnitude.
+            </p>
+          </div>
+          <div class="model-select-wrap">
+            <label for="m1-model-select">Active Model Split:</label>
+            <select id="m1-model-select" class="custom-select">
+              <option value="poetry_half1">poetry_half1 (Poetry Split 1)</option>
+              <option value="poetry_half2">poetry_half2 (Poetry Split 2)</option>
+              <option value="prose_half1" selected>prose_half1 (Prose Split 1)</option>
+              <option value="prose_half2">prose_half2 (Prose Split 2)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-2 mt-4">
+          <!-- Disaggregated Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Disaggregated Module Statistics (All 42 Layers)</h3>
+              <span class="badge badge-info" id="m1-table-badge">prose_half1</span>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="m1-table">
+                  <thead>
+                    <tr>
+                      <th>Module</th>
+                      <th>Mean &Delta;M (Std)</th>
+                      <th>Mean &Delta;D (Std)</th>
+                      <th>Pearson $r$ ($p$-val)</th>
+                      <th>Spearman $\rho$</th>
+                      <th>Regime</th>
+                    </tr>
+                  </thead>
+                  <tbody id="m1-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Correlation Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Directional Decoupling Profile (Pearson $r$)</h3>
+              <span class="badge badge-cyan">Attention vs MLP Dichotomy</span>
+            </div>
+            <div class="card-body">
+              <div id="m1-chart-container" class="chart-box">
+                <!-- SVG bar chart injected by JS -->
+              </div>
+              <div class="chart-legend mt-3">
+                <div class="legend-item"><span class="legend-color legend-cyan"></span> Flexible Decoupling ($r < 0$)</div>
+                <div class="legend-item"><span class="legend-color legend-amber"></span> Coupled Scaling ($r > 0$)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mathematical Insight Callout -->
+        <div class="note-box mt-6">
+          <div class="note-icon">&#x1F4A1;</div>
+          <div class="note-text">
+            <strong>Key Finding &mdash; Structural Architectural Dichotomy:</strong>
+            Attention query/key/output projections (`q_proj`, `k_proj`, `o_proj`) show pronounced <em>negative</em> Pearson and Spearman correlations ($r \approx -0.21$ to $-0.37$, $\rho \approx -0.34$ to $-0.56$, $p < 0.05$). This proves DoRA enables attention to reorient its directional attention heads without needing proportional magnitude inflation. In contrast, MLP feedforward layers (`gate_proj`, `up_proj`, `down_proj`) exhibit strongly <em>coupled positive scaling</em> ($r \approx +0.51$ to $+0.58$, $p < 10^{-4}$), showing that capacity expansion in knowledge representation requires simultaneous magnitude amplification.
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: MODULE 2 ==================== -->
+      <section class="tab-content" id="tab-module2">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Module 2 Diagnostics</span>
+            <h2 class="section-title">Extended Geometric Diagnostics & Rank Inflation</h2>
+            <p class="section-desc">
+              Empirical evaluation of column vs row asymmetry (BoRA), Frobenius norm retention (MAP), directional cosine alignment, and the non-linear rank inflation phenomenon.
+            </p>
+          </div>
+        </div>
+
+        <!-- Extended Metrics Summary Table -->
+        <div class="card card-wide mt-4">
+          <div class="card-header">
+            <h3 class="card-title">Comprehensive Geometric Diagnostics Across All 4 Models</h3>
+            <span class="badge badge-accent">FP32 Factored SVD</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table" id="m2-table">
+                <thead>
+                  <tr>
+                    <th>Model Split</th>
+                    <th>BoRA Row/Col Ratio</th>
+                    <th>MAP Frob Ratio $\frac{\|W'\|_F}{\|W_0\|_F}$</th>
+                    <th>MAP Global CosSim</th>
+                    <th>BiDoRA Spectral Ent</th>
+                    <th>$r_{\text{eff}}(\Delta V)$ (Core Rank $\le 16$)</th>
+                    <th>$r_{\text{eff}}(\Delta W)$ (Full-Rank Merged)</th>
+                    <th>Rank Inflation Factor</th>
+                  </tr>
+                </thead>
+                <tbody id="m2-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rank Inflation Visual Showcase -->
+        <div class="card card-wide mt-6">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">The DoRA Empirical Rank Inflation Phenomenon</h3>
+              <p class="card-desc">Comparing effective rank of low-rank core $\Delta V = \frac{\alpha}{r}BA$ vs merged update $\Delta W = W' - W_0$</p>
+            </div>
+            <span class="badge badge-emerald">Key Theoretical Insight</span>
+          </div>
+          <div class="card-body">
+            <div class="rank-inflation-showcase" id="rank-inflation-showcase">
+              <!-- Populated by JS -->
+            </div>
+            <div class="info-callout mt-4">
+              <h4>Why does Rank Inflation occur in DoRA?</h4>
+              <p>
+                In vanilla LoRA, the effective update is strictly low-rank: $\Delta W_{\text{LoRA}} = \frac{\alpha}{r}BA$, meaning $\text{rank}(\Delta W) \le 16$. In DoRA, the merged weight is $W' = m \odot \frac{W_0 + \Delta V}{\|W_0 + \Delta V\|_c}$. When computing the effective change $\Delta W = W' - W_0$, the non-linear column-wise vector normalization ($L_2$ norm per column) couples the full-rank base weight $W_0$ with the low-rank delta. Consequently, $\Delta W$ is mathematically full-rank across all singular value spectra, yielding an effective entropy rank $r_{\text{eff}}(\Delta W) \approx \mathbf{800.5} - \mathbf{814.1}$ (an <strong>$83\times - 104\times$ expansion</strong>)!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: MODULE 3 ==================== -->
+      <section class="tab-content" id="tab-module3">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Module 3 Diagnostics</span>
+            <h2 class="section-title">Within-Domain Stability (Half 1 vs Half 2)</h2>
+            <p class="section-desc">
+              Measuring optimization trajectory stability across independent data splits within the same linguistic domain using weight cosine similarity, magnitude-gated TIES sign conflicts, and Grassmannian subspace overlap.
+            </p>
+          </div>
+        </div>
+
+        <!-- Stability Comparison Cards -->
+        <div class="grid grid-2 mt-4" id="m3-cards-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Detailed Metrics Table -->
+        <div class="card card-wide mt-6">
+          <div class="card-header">
+            <h3 class="card-title">Within-Domain Representation Stability Comparison</h3>
+            <span class="badge badge-cyan">Independent Split Stability</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table" id="m3-table">
+                <thead>
+                  <tr>
+                    <th>Domain Split Pair</th>
+                    <th>Mean Update Cosine</th>
+                    <th>TIES Top-5% Conflict</th>
+                    <th>TIES Top-10% Conflict</th>
+                    <th>TIES Top-20% Conflict</th>
+                    <th>Shuffled Null Chance</th>
+                    <th>Left Subspace Overlap (Output)</th>
+                    <th>Right Subspace Overlap (Input)</th>
+                    <th>Subspace Asymmetry</th>
+                  </tr>
+                </thead>
+                <tbody id="m3-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Note Box on TIES and Grassmannian -->
+        <div class="grid grid-2 mt-6">
+          <div class="note-box">
+            <div class="note-icon">&#x2696;</div>
+            <div class="note-text">
+              <strong>TIES Sign Conflict Gating:</strong>
+              When pruning to the top-5% most significant update coordinates, sign conflict between independent splits is only <strong>$28.0\% - 28.7\%$</strong> &mdash; massively suppressed compared to the 50% chance null baseline. This confirms high-magnitude gradient directions converge consistently across independent data subsets.
+            </div>
+          </div>
+          <div class="note-box">
+            <div class="note-icon">&#x1F500;</div>
+            <div class="note-text">
+              <strong>Grassmannian Subspace Asymmetry ($1.9\times - 2.4\times$):</strong>
+              The output singular subspace (left singular vectors $U$) exhibits $2.43\times$ higher overlap ($0.1620$) than the input subspace ($V$, $0.0666$) in Poetry, and $1.91\times$ higher in Prose ($0.1204$ vs $0.0631$). Models stabilize where they send information much faster than from where they receive it.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 5: MODULE 4 ==================== -->
+      <section class="tab-content" id="tab-module4">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Module 4 Diagnostics</span>
+            <h2 class="section-title">Cross-Domain Divergence & Anchored Alignment</h2>
+            <p class="section-desc">
+              Quantifying geometric divergence between Classical Poetry ($\text{sa} \to \text{hi}$) and Contemporary Prose ($\text{sa} \leftrightarrow \text{hi}$), anchored against empirical within-domain ceilings.
+            </p>
+          </div>
+        </div>
+
+        <!-- Anchored Divergence Table -->
+        <div class="card card-wide mt-4">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Anchored Relative Alignment Index</h3>
+              <p class="card-desc">Cross-domain metrics anchored against empirical within-domain ceilings (Poetry and Prose)</p>
+            </div>
+            <span class="badge badge-emerald">Normalization Principle</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table" id="m4-anchored-table">
+                <thead>
+                  <tr>
+                    <th>Geometric Metric</th>
+                    <th>Cross-Domain (`poetry_vs_prose`)</th>
+                    <th>Poetry Ceiling (`h1_vs_h2`)</th>
+                    <th>Poetry Relative Index</th>
+                    <th>Prose Ceiling (`h1_vs_h2`)</th>
+                    <th>Prose Relative Index</th>
+                  </tr>
+                </thead>
+                <tbody id="m4-anchored-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cross Domain Breakdown Grid -->
+        <div class="grid grid-3 mt-6">
+          <div class="stat-card">
+            <span class="stat-label">Cross-Domain Cosine Similarity</span>
+            <span class="stat-num text-cyan">0.1000</span>
+            <span class="stat-sub">45.86% of within-domain ceiling</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Top-5% TIES Sign Conflict</span>
+            <span class="stat-num text-amber">40.55%</span>
+            <span class="stat-sub">Significantly below 50.0% null chance</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Output Subspace Overlap (Left)</span>
+            <span class="stat-num text-emerald">0.0512</span>
+            <span class="stat-sub">31.64% relative overlap index</span>
+          </div>
+        </div>
+
+        <!-- Model Merging Guidance -->
+        <div class="card card-wide mt-6">
+          <div class="card-header">
+            <h3 class="card-title">Model Merging Readiness & Protocol (DARE / TIES)</h3>
+            <span class="badge badge-accent">Practical Application</span>
+          </div>
+          <div class="card-body">
+            <p>
+              Given that cross-domain sign conflict on top-5% magnitude coordinates is <strong>$40.55\%$</strong> (nearly 10% below random interference chance of 50%), merging the Poetry and Prose adapters is geometrically viable. Recommended recipe:
+            </p>
+            <ol class="bullet-list mt-3">
+              <li><strong>Magnitude Trimming (DARE/TIES):</strong> Drop bottom 80% coordinates ($\Delta W$) with low magnitude to eliminate high-entropy noise where interference peaks ($42.65\%$).</li>
+              <li><strong>Elect Sign Consensus:</strong> Resolve directional sign conflicts by voting on top-20% coordinate signs.</li>
+              <li><strong>Magnitude Scaling:</strong> Scale merged direction $V_{\text{merged}}$ with average magnitude vectors $m_{\text{avg}} = \frac{m_{\text{poetry}} + m_{\text{prose}}}{2}$.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 6: MODULE 5 ==================== -->
+      <section class="tab-content" id="tab-module5">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Module 5 Diagnostics</span>
+            <h2 class="section-title">Two-Way Grouping: Depth Bands & Attention Types</h2>
+            <p class="section-desc">
+              Cross-tabulating update dynamics across **Depth Bands** (Early: 0–13, Mid: 14–27, Late: 28–41) and **Attention Architecture** (Global vs Local Sliding-Window).
+            </p>
+          </div>
+          <div class="model-select-wrap">
+            <label for="m5-model-select">Select Model Split:</label>
+            <select id="m5-model-select" class="custom-select">
+              <option value="poetry_half1">poetry_half1 (Poetry Split 1)</option>
+              <option value="poetry_half2">poetry_half2 (Poetry Split 2)</option>
+              <option value="prose_half1" selected>prose_half1 (Prose Split 1)</option>
+              <option value="prose_half2">prose_half2 (Prose Split 2)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2D Cross-Tabulation Grids -->
+        <div class="grid grid-2 mt-4">
+          <!-- Frobenius Norm Grid -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Frobenius Update Norm $\|\Delta W\|_F$ Matrix</h3>
+              <span class="badge badge-cyan" id="m5-frob-badge">prose_half1</span>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table matrix-table" id="m5-frob-table">
+                  <thead>
+                    <tr>
+                      <th>Depth Band</th>
+                      <th>Global Attention</th>
+                      <th>Sliding-Window</th>
+                      <th>Depth Marginal</th>
+                    </tr>
+                  </thead>
+                  <tbody id="m5-frob-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direction & Magnitude Shift Grid -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Magnitude ($\Delta M$) & Direction ($\Delta D$) Shifts</h3>
+              <span class="badge badge-accent">Per-Band Asymmetry</span>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="m5-dyn-table">
+                  <thead>
+                    <tr>
+                      <th>Depth Band</th>
+                      <th>Mean $\Delta M$ (Global / Sliding)</th>
+                      <th>Mean $\Delta D$ (Global / Sliding)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="m5-dyn-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two-Way Architecture Insights -->
+        <div class="grid grid-2 mt-6">
+          <div class="note-box">
+            <div class="note-icon">&#x1F4C8;</div>
+            <div class="note-text">
+              <strong>Monotonic Norm Growth Across Depth:</strong>
+              In all 4 models, weight update norm $\|\Delta W\|_F$ increases monotonically with layer depth. In Prose, early layers absorb $1.668 \to$ mid layers $1.739 \to$ late layers $2.303$ (a <strong>$+38\%$ intensification</strong> in deeper semantic representation layers).
+            </div>
+          </div>
+          <div class="note-box">
+            <div class="note-icon">&#x26A1;</div>
+            <div class="note-text">
+              <strong>Global vs Local Attention Gap:</strong>
+              Global attention projections consistently undergo larger updates than sliding-window layers across all depth bands ($1.9363$ vs $1.8707$ in Prose, $0.7425$ vs $0.7173$ in Poetry), reflecting the higher communicative burden of global cross-sequence tokens.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 7: EXPLORER ==================== -->
+      <section class="tab-content" id="tab-explorer">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Raw Data Inspector</span>
+            <h2 class="section-title">All 294 Target Linear Projections Explorer</h2>
+            <p class="section-desc">
+              Search, filter, and inspect exact metrics for every single linear projection layer across all 42 transformer blocks without missing a single tensor.
+            </p>
+          </div>
+          <div class="export-btn-group">
+            <button class="btn btn-secondary" id="btn-export-csv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export Visible as CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="filter-card mt-4">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="filter-model">Model:</label>
+              <select id="filter-model" class="custom-select filter-select">
+                <option value="prose_half1" selected>prose_half1</option>
+                <option value="prose_half2">prose_half2</option>
+                <option value="poetry_half1">poetry_half1</option>
+                <option value="poetry_half2">poetry_half2</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filter-module-type">Module Type:</label>
+              <select id="filter-module-type" class="custom-select filter-select">
+                <option value="ALL" selected>All (7 Types)</option>
+                <option value="q_proj">q_proj</option>
+                <option value="k_proj">k_proj</option>
+                <option value="v_proj">v_proj</option>
+                <option value="o_proj">o_proj</option>
+                <option value="gate_proj">gate_proj</option>
+                <option value="up_proj">up_proj</option>
+                <option value="down_proj">down_proj</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filter-att-type">Attention Type:</label>
+              <select id="filter-att-type" class="custom-select filter-select">
+                <option value="ALL" selected>All (Global & Sliding)</option>
+                <option value="global">global</option>
+                <option value="sliding_window">sliding_window</option>
+              </select>
+            </div>
+            <div class="filter-item filter-search-wrap">
+              <label for="filter-search">Search Name / Layer:</label>
+              <input type="text" id="filter-search" class="search-input" placeholder="e.g. layers.28, gate_proj, etc...">
+            </div>
+          </div>
+          <div class="filter-meta">
+            <span id="filter-count-badge" class="badge badge-info">Showing 294 of 294 Projections</span>
+          </div>
+        </div>
+
+        <!-- 294 Projections Table -->
+        <div class="card card-wide mt-4">
+          <div class="card-body p-0">
+            <div class="table-responsive table-scroll-y">
+              <table class="data-table interactive-table" id="explorer-table">
+                <thead>
+                  <tr>
+                    <th data-sort="layer_num">Layer #</th>
+                    <th data-sort="module_type">Module</th>
+                    <th data-sort="attention_type">Attention</th>
+                    <th data-sort="r_eff_delta_V">$r_{\text{eff}}(\Delta V)$</th>
+                    <th data-sort="r_eff_delta_W">$r_{\text{eff}}(\Delta W)$</th>
+                    <th data-sort="rank_inflation_ratio">Inflation &uarr;</th>
+                    <th data-sort="map_magnitude_ratio">MAP Ratio</th>
+                    <th data-sort="map_cosine_sim">MAP CosSim</th>
+                    <th data-sort="spectral_entropy">Spectral Ent</th>
+                    <th data-sort="bora_asymmetry_ratio">BoRA Asym</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="explorer-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 8: FORMULAS & MATH ==================== -->
+      <section class="tab-content" id="tab-math">
+        <div class="section-header-bar">
+          <div>
+            <span class="section-tag">Theoretical Foundations</span>
+            <h2 class="section-title">Mathematical Formulations & Notation Reference</h2>
+            <p class="section-desc">
+              Formal mathematical definitions of all metrics implemented in the DoRA Geometric Analysis Suite.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-2 mt-4">
+          <div class="math-card">
+            <h3>1. DoRA Weight Decomposition</h3>
+            <div class="formula-box">
+              $$W' = m \odot \frac{W_0 + \frac{\alpha}{r} B A}{\left\|W_0 + \frac{\alpha}{r} B A\right\|_c}$$
+            </div>
+            <p>
+              Where $W_0 \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ is the frozen base model weight, $B \in \mathbb{R}^{d_{\text{out}} \times r}$ and $A \in \mathbb{R}^{r \times d_{\text{in}}}$ are low-rank matrices ($r=16, \alpha=32$), and $m \in \mathbb{R}^{d_{\text{out}}}$ is the learnable magnitude vector initialized to $\|W_0\|_c$.
+            </p>
+          </div>
+
+          <div class="math-card">
+            <h3>2. Effective Rank ($r_{\text{eff}}$)</h3>
+            <div class="formula-box">
+              $$r_{\text{eff}}(M) = \exp\left(-\sum_{i=1}^k p_i \ln p_i\right), \quad p_i = \frac{\sigma_i}{\sum_j \sigma_j}$$
+            </div>
+            <p>
+              Entropy-based effective rank (Roy &amp; Vetterli, 2007) of singular values $\sigma_i$. While $\Delta V = \frac{\alpha}{r}BA$ has strict rank $\le 16$, the merged update $\Delta W = W' - W_0$ achieves $r_{\text{eff}} \approx 800$ due to column normalization.
+            </p>
+          </div>
+
+          <div class="math-card">
+            <h3>3. Magnitude-Gated TIES Sign Conflict</h3>
+            <div class="formula-box">
+              $$\text{Conflict}_K = \frac{1}{|S_K|} \sum_{(i,j) \in S_K} \mathbb{I}\left[\operatorname{sgn}(\Delta W_{ij}^{(1)}) \ne \operatorname{sgn}(\Delta W_{ij}^{(2)})\right]$$
+            </div>
+            <p>
+              Evaluated strictly over the top $K \in \{5\%, 10\%, 20\%\}$ coordinates $S_K$ with highest average absolute magnitude: $\frac{|\Delta W_{ij}^{(1)}| + |\Delta W_{ij}^{(2)}|}{2}$, benchmarked against the $50\%$ shuffled null chance baseline.
+            </p>
+          </div>
+
+          <div class="math-card">
+            <h3>4. Grassmannian Subspace Overlap</h3>
+            <div class="formula-box">
+              $$\text{Overlap}(U_1, U_2) = \frac{1}{p} \sum_{i=1}^p \cos^2(\theta_i) = \frac{1}{p} \|U_1^T U_2\|_F^2$$
+            </div>
+            <p>
+              Projection metric on the Grassmann manifold $\mathcal{G}(p, d)$ over the top-$p=16$ left singular vectors ($U$, output semantic space) and right singular vectors ($V$, input contextual space).
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Modal Inspector -->
+    <div class="modal-backdrop" id="layer-modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <span class="badge badge-cyan" id="modal-layer-badge">Layer 0</span>
+            <h3 class="modal-title" id="modal-title">module_name</h3>
+          </div>
+          <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body-content">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
