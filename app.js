@@ -128,7 +128,7 @@
     state.data = jsonData;
     elements.statusBadge.textContent = `Loaded (${sourceName})`;
     elements.statusBadge.className = 'status-badge';
-
+    d
     // Render metadata
     if (jsonData.meta) {
       const bModel = jsonData.meta.base_model || 'google/gemma-4-E4B';
@@ -240,32 +240,61 @@
       `;
       elements.milestoneTableBody.appendChild(row);
     });
-  }
+
+    // Render Downstream Test Generation Benchmarks Table
+    const testEvalBody = document.getElementById('test-eval-table-body');
+      if (testEvalBody && state.data.test_generation_benchmarks) {
+        testEvalBody.innerHTML = '';
+        const testModels = state.data.test_generation_benchmarks.models || {};
+        Object.entries(testModels).forEach(([mName, mData]) => {
+          const domain = mData.domain || '';
+          const bMarks = mData.benchmarks || {};
+          Object.entries(bMarks).forEach(([bTag, bMetrics]) => {
+            const dir = (bTag.includes('hi_to_sa') || bTag.includes('hi2sa')) ? 'hi → sa' : 'sa → hi';
+            const isTransfer = bTag.includes('transfer');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td><strong><code>${mName}</code></strong></td>
+            <td><span class="badge ${domain === 'poetry' ? 'badge-amber' : 'badge-emerald'}">${domain}</span></td>
+            <td><code>${bTag}</code> ${isTransfer ? '<span class="tag" style="font-size:0.65rem; background:rgba(245,158,11,0.2); color:#fbbf24;">Transfer</span>' : ''}</td>
+            <td><span class="tag">${dir}</span></td>
+            <td>${bMetrics.num_evaluated || bMetrics.num_sentences || 0}</td>
+            <td><strong class="text-cyan">${fmt(bMetrics.bleu_flores200, 2)}</strong></td>
+            <td><code>${fmt(bMetrics.bleu_13a, 2)}</code></td>
+            <td><strong class="text-emerald">${fmt(bMetrics.chrf_pp, 2)}</strong></td>
+            <td><code>${fmt(bMetrics.char_length_ratio || bMetrics.length_ratio, 3)}</code></td>
+            <td><span class="text-dim">${bMetrics.sent_per_sec ? bMetrics.sent_per_sec + ' sent/s' : ''}</span></td>
+          `;
+            testEvalBody.appendChild(row);
+          });
+        });
+      }
+    }
 
   // =========================================================================
   // Tab 2: Module 1 Renderers (Decoupling Dynamics)
   // =========================================================================
   function renderModule1() {
-    if (!state.data || !state.data.core_dora_metrics) return;
-    const modelKey = state.m1Model;
-    const core = state.data.core_dora_metrics[modelKey];
-    if (!core) return;
+        if (!state.data || !state.data.core_dora_metrics) return;
+        const modelKey = state.m1Model;
+        const core = state.data.core_dora_metrics[modelKey];
+        if (!core) return;
 
-    elements.m1TableBadge.textContent = modelKey;
-    elements.m1TableBody.innerHTML = '';
+        elements.m1TableBadge.textContent = modelKey;
+        elements.m1TableBody.innerHTML = '';
 
-    const moduleTypes = Object.keys(core);
-    const chartData = [];
+        const moduleTypes = Object.keys(core);
+        const chartData = [];
 
-    moduleTypes.forEach(mod => {
-      const m = core[mod];
-      const r = m.pearson_r;
-      const rho = m.spearman_rho;
-      const isDecoupled = r < 0;
-      chartData.push({ module: mod, r: r, rho: rho });
+        moduleTypes.forEach(mod => {
+          const m = core[mod];
+          const r = m.pearson_r;
+          const rho = m.spearman_rho;
+          const isDecoupled = r < 0;
+          chartData.push({ module: mod, r: r, rho: rho });
 
-      const row = document.createElement('tr');
-      row.innerHTML = `
+          const row = document.createElement('tr');
+          row.innerHTML = `
         <td><strong><code>${mod}</code></strong></td>
         <td><code>${fmt(m.mean_delta_M)}</code> <span class="text-dim">(${fmt(m.std_delta_M)})</span></td>
         <td><code>${fmt(m.mean_delta_D)}</code> <span class="text-dim">(${fmt(m.std_delta_D)})</span></td>
@@ -273,41 +302,41 @@
         <td><code>${fmt(rho)}</code> <span class="text-dim">($p=${fmtSci(m.spearman_pvalue)})</span></td>
         <td><span class="badge ${isDecoupled ? 'badge-cyan' : 'badge-amber'}">${isDecoupled ? 'Flexible Decoupling' : 'Coupled Scaling'}</span></td>
       `;
-      elements.m1TableBody.appendChild(row);
-    });
+          elements.m1TableBody.appendChild(row);
+        });
 
-    renderModule1Chart(chartData);
-  }
+        renderModule1Chart(chartData);
+      }
 
   function renderModule1Chart(data) {
-    const width = 500;
-    const height = 240;
-    const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-    const chartW = width - margin.left - margin.right;
-    const chartH = height - margin.top - margin.bottom;
+        const width = 500;
+        const height = 240;
+        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+        const chartW = width - margin.left - margin.right;
+        const chartH = height - margin.top - margin.bottom;
 
-    // Y scale range [-1.0, +1.0]
-    const zeroY = margin.top + chartH / 2;
-    const barWidth = chartW / data.length - 12;
+        // Y scale range [-1.0, +1.0]
+        const zeroY = margin.top + chartH / 2;
+        const barWidth = chartW / data.length - 12;
 
-    let barsSvg = '';
-    data.forEach((d, i) => {
-      const x = margin.left + i * (barWidth + 12) + 6;
-      const rClamped = Math.max(-1, Math.min(1, d.r));
-      const barH = Math.abs(rClamped) * (chartH / 2);
-      const y = rClamped >= 0 ? zeroY - barH : zeroY;
-      const fill = rClamped < 0 ? '#06b6d4' : '#f59e0b';
+        let barsSvg = '';
+        data.forEach((d, i) => {
+          const x = margin.left + i * (barWidth + 12) + 6;
+          const rClamped = Math.max(-1, Math.min(1, d.r));
+          const barH = Math.abs(rClamped) * (chartH / 2);
+          const y = rClamped >= 0 ? zeroY - barH : zeroY;
+          const fill = rClamped < 0 ? '#06b6d4' : '#f59e0b';
 
-      barsSvg += `
+          barsSvg += `
         <rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="4" fill="${fill}" opacity="0.85">
           <title>${d.module}: Pearson r = ${fmt(d.r, 3)}</title>
         </rect>
         <text x="${x + barWidth / 2}" y="${height - 15}" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">${d.module.replace('_proj', '')}</text>
         <text x="${x + barWidth / 2}" y="${rClamped >= 0 ? y - 6 : y + barH + 14}" fill="${fill}" font-size="11" font-weight="600" text-anchor="middle" font-family="'JetBrains Mono', monospace">${fmt(d.r, 2)}</text>
       `;
-    });
+        });
 
-    elements.m1ChartContainer.innerHTML = `
+        elements.m1ChartContainer.innerHTML = `
       <svg class="chart-svg" viewBox="0 0 ${width} ${height}">
         <!-- Grid line 0 -->
         <line x1="${margin.left}" y1="${zeroY}" x2="${width - margin.right}" y2="${zeroY}" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-dasharray="4,4"/>
@@ -319,23 +348,23 @@
         ${barsSvg}
       </svg>
     `;
-  }
+      }
 
   // =========================================================================
   // Tab 3: Module 2 Renderers (Rank Inflation & Extended Diagnostics)
   // =========================================================================
   function renderModule2() {
-    if (!state.data || !state.data.extended_geometric_metrics) return;
-    const ext = state.data.extended_geometric_metrics;
+        if (!state.data || !state.data.extended_geometric_metrics) return;
+        const ext = state.data.extended_geometric_metrics;
 
-    elements.m2TableBody.innerHTML = '';
-    elements.rankInflationShowcase.innerHTML = '';
+        elements.m2TableBody.innerHTML = '';
+        elements.rankInflationShowcase.innerHTML = '';
 
-    Object.entries(ext).forEach(([expName, e]) => {
-      const row = document.createElement('tr');
-      const hfUrl = state.data.training_eval_benchmarks?.[expName]?.huggingface_url || `https://huggingface.co/NIVED2003/gemma-4-E4B-dora-${expName.replace('_', '-')}`;
+        Object.entries(ext).forEach(([expName, e]) => {
+          const row = document.createElement('tr');
+          const hfUrl = state.data.training_eval_benchmarks?.[expName]?.huggingface_url || `https://huggingface.co/NIVED2003/gemma-4-E4B-dora-${expName.replace('_', '-')}`;
 
-      row.innerHTML = `
+          row.innerHTML = `
         <td>
           <a href="${hfUrl}" target="_blank" rel="noopener noreferrer" class="model-hf-link">
             <strong><code>${expName}</code></strong> <span style="font-size:0.85em; color:#fbbf24;">↗</span>
@@ -349,16 +378,16 @@
         <td><strong class="text-cyan"><code>${fmt(e.mean_r_eff_delta_W)}</code></strong></td>
         <td><span class="badge badge-emerald"><strong>${fmt(e.mean_rank_inflation_ratio, 1)}&times;</strong></span></td>
       `;
-      elements.m2TableBody.appendChild(row);
+          elements.m2TableBody.appendChild(row);
 
-      // Rank Inflation Showcase Card
-      const showcaseCard = document.createElement('div');
-      showcaseCard.className = 'rank-card';
-      const rV = e.mean_r_eff_delta_V;
-      const rW = e.mean_r_eff_delta_W;
-      const ratio = e.mean_rank_inflation_ratio;
+          // Rank Inflation Showcase Card
+          const showcaseCard = document.createElement('div');
+          showcaseCard.className = 'rank-card';
+          const rV = e.mean_r_eff_delta_V;
+          const rW = e.mean_r_eff_delta_W;
+          const ratio = e.mean_rank_inflation_ratio;
 
-      showcaseCard.innerHTML = `
+          showcaseCard.innerHTML = `
         <div class="rank-card-title" style="display:flex; justify-content:space-between; align-items:center;">
           <span>${expName}</span>
           <a href="${hfUrl}" target="_blank" rel="noopener noreferrer" class="model-hf-link" style="font-size:0.75rem; color:#fbbf24;">🤗 Hub ↗</a>
@@ -385,27 +414,27 @@
           Rank Inflation: +${fmt(ratio, 1)}&times;
         </div>
       `;
-      elements.rankInflationShowcase.appendChild(showcaseCard);
-    });
-  }
+          elements.rankInflationShowcase.appendChild(showcaseCard);
+        });
+      }
 
   // =========================================================================
   // Tab 4: Module 3 Renderers (Within-Domain Stability)
   // =========================================================================
   function renderModule3() {
-    if (!state.data || !state.data.within_domain_stability) return;
-    const within = state.data.within_domain_stability;
+        if (!state.data || !state.data.within_domain_stability) return;
+        const within = state.data.within_domain_stability;
 
-    elements.m3CardsContainer.innerHTML = '';
-    elements.m3TableBody.innerHTML = '';
+        elements.m3CardsContainer.innerHTML = '';
+        elements.m3TableBody.innerHTML = '';
 
-    Object.entries(within).forEach(([compKey, comp]) => {
-      // Comparison Card
-      const card = document.createElement('div');
-      card.className = 'stability-card';
-      const isPoetry = compKey.includes('poetry');
+        Object.entries(within).forEach(([compKey, comp]) => {
+          // Comparison Card
+          const card = document.createElement('div');
+          card.className = 'stability-card';
+          const isPoetry = compKey.includes('poetry');
 
-      card.innerHTML = `
+          card.innerHTML = `
         <div class="stability-header">
           <div class="stability-domain-badge">${compKey}</div>
           <span class="badge ${isPoetry ? 'badge-amber' : 'badge-emerald'}">${isPoetry ? 'Poetry Splits' : 'Prose Splits'}</span>
@@ -448,12 +477,12 @@
           </div>
         </div>
       `;
-      elements.m3CardsContainer.appendChild(card);
+          elements.m3CardsContainer.appendChild(card);
 
-      // Table Row
-      const row = document.createElement('tr');
-      const asym = (comp.mean_left_subspace_overlap_output / (comp.mean_right_subspace_overlap_input + 1e-12)).toFixed(2);
-      row.innerHTML = `
+          // Table Row
+          const row = document.createElement('tr');
+          const asym = (comp.mean_left_subspace_overlap_output / (comp.mean_right_subspace_overlap_input + 1e-12)).toFixed(2);
+          row.innerHTML = `
         <td><strong><code>${compKey}</code></strong></td>
         <td><strong class="text-cyan">${fmt(comp.mean_cosine_similarity)}</strong></td>
         <td><strong class="text-emerald">${fmtPct(comp.mean_conflict_top_5pct)}</strong></td>
@@ -464,49 +493,49 @@
         <td><code>${fmt(comp.mean_right_subspace_overlap_input)}</code></td>
         <td><span class="badge badge-accent">${asym}&times; Left/Right</span></td>
       `;
-      elements.m3TableBody.appendChild(row);
-    });
-  }
+          elements.m3TableBody.appendChild(row);
+        });
+      }
 
   // =========================================================================
   // Tab 5: Module 4 Renderers (Cross-Domain Divergence)
   // =========================================================================
   function renderModule4() {
-    if (!state.data) return;
-    const cross = state.data.cross_domain_divergence?.poetry_vs_prose;
-    const withinP = state.data.within_domain_stability?.poetry_h1_vs_h2;
-    const withinPr = state.data.within_domain_stability?.prose_h1_vs_h2;
-    if (!cross || !withinP || !withinPr) return;
+        if (!state.data) return;
+        const cross = state.data.cross_domain_divergence?.poetry_vs_prose;
+        const withinP = state.data.within_domain_stability?.poetry_h1_vs_h2;
+        const withinPr = state.data.within_domain_stability?.prose_h1_vs_h2;
+        if (!cross || !withinP || !withinPr) return;
 
-    elements.m4AnchoredTableBody.innerHTML = '';
+        elements.m4AnchoredTableBody.innerHTML = '';
 
-    const metrics = [
-      {
-        name: 'Weight Update Cosine Similarity',
-        cross: cross.mean_cosine_similarity,
-        ceilP: withinP.mean_cosine_similarity,
-        ceilPr: withinPr.mean_cosine_similarity
-      },
-      {
-        name: 'Left Subspace Overlap (Output Space)',
-        cross: cross.mean_left_subspace_overlap_output,
-        ceilP: withinP.mean_left_subspace_overlap_output,
-        ceilPr: withinPr.mean_left_subspace_overlap_output
-      },
-      {
-        name: 'Right Subspace Overlap (Input Space)',
-        cross: cross.mean_right_subspace_overlap_input,
-        ceilP: withinP.mean_right_subspace_overlap_input,
-        ceilPr: withinPr.mean_right_subspace_overlap_input
-      }
-    ];
+        const metrics = [
+          {
+            name: 'Weight Update Cosine Similarity',
+            cross: cross.mean_cosine_similarity,
+            ceilP: withinP.mean_cosine_similarity,
+            ceilPr: withinPr.mean_cosine_similarity
+          },
+          {
+            name: 'Left Subspace Overlap (Output Space)',
+            cross: cross.mean_left_subspace_overlap_output,
+            ceilP: withinP.mean_left_subspace_overlap_output,
+            ceilPr: withinPr.mean_left_subspace_overlap_output
+          },
+          {
+            name: 'Right Subspace Overlap (Input Space)',
+            cross: cross.mean_right_subspace_overlap_input,
+            ceilP: withinP.mean_right_subspace_overlap_input,
+            ceilPr: withinPr.mean_right_subspace_overlap_input
+          }
+        ];
 
-    metrics.forEach(m => {
-      const relP = ((m.cross / m.ceilP) * 100).toFixed(2);
-      const relPr = ((m.cross / m.ceilPr) * 100).toFixed(2);
+        metrics.forEach(m => {
+          const relP = ((m.cross / m.ceilP) * 100).toFixed(2);
+          const relPr = ((m.cross / m.ceilPr) * 100).toFixed(2);
 
-      const row = document.createElement('tr');
-      row.innerHTML = `
+          const row = document.createElement('tr');
+          row.innerHTML = `
         <td><strong>${m.name}</strong></td>
         <td><strong class="text-cyan"><code>${fmt(m.cross)}</code></strong></td>
         <td><code>${fmt(m.ceilP)}</code></td>
@@ -514,125 +543,125 @@
         <td><code>${fmt(m.ceilPr)}</code></td>
         <td><span class="badge badge-cyan"><strong>${relPr}%</strong></span></td>
       `;
-      elements.m4AnchoredTableBody.appendChild(row);
-    });
-  }
+          elements.m4AnchoredTableBody.appendChild(row);
+        });
+      }
 
   // =========================================================================
   // Tab 6: Module 5 Renderers (Two-Way Grouping)
   // =========================================================================
   function renderModule5() {
-    if (!state.data || !state.data.two_way_asymmetry) return;
-    const modelKey = state.m5Model;
-    const tw = state.data.two_way_asymmetry[modelKey];
-    if (!tw) return;
+        if (!state.data || !state.data.two_way_asymmetry) return;
+        const modelKey = state.m5Model;
+        const tw = state.data.two_way_asymmetry[modelKey];
+        if (!tw) return;
 
-    elements.m5FrobBadge.textContent = modelKey;
-    elements.m5FrobTableBody.innerHTML = '';
-    elements.m5DynTableBody.innerHTML = '';
+        elements.m5FrobBadge.textContent = modelKey;
+        elements.m5FrobTableBody.innerHTML = '';
+        elements.m5DynTableBody.innerHTML = '';
 
-    const bands = [
-      { key: 'early_0_13', label: 'Early (Layers 0–13)' },
-      { key: 'mid_14_27', label: 'Mid (Layers 14–27)' },
-      { key: 'late_28_41', label: 'Late (Layers 28–41)' }
-    ];
+        const bands = [
+          { key: 'early_0_13', label: 'Early (Layers 0–13)' },
+          { key: 'mid_14_27', label: 'Mid (Layers 14–27)' },
+          { key: 'late_28_41', label: 'Late (Layers 28–41)' }
+        ];
 
-    // Frobenius Grid
-    bands.forEach(b => {
-      const gKey = `${b.key}_x_global`;
-      const sKey = `${b.key}_x_sliding_window`;
-      const row = document.createElement('tr');
+        // Frobenius Grid
+        bands.forEach(b => {
+          const gKey = `${b.key}_x_global`;
+          const sKey = `${b.key}_x_sliding_window`;
+          const row = document.createElement('tr');
 
-      row.innerHTML = `
+          row.innerHTML = `
         <td><strong>${b.label}</strong></td>
         <td><code class="text-cyan">${fmt(tw[gKey]?.mean_delta_W_frob_norm)}</code></td>
         <td><code>${fmt(tw[sKey]?.mean_delta_W_frob_norm)}</code></td>
         <td><strong><code>${fmt(tw[b.key]?.mean_delta_W_frob_norm)}</code></strong></td>
       `;
-      elements.m5FrobTableBody.appendChild(row);
-    });
+          elements.m5FrobTableBody.appendChild(row);
+        });
 
-    // Marginal Row
-    const margRow = document.createElement('tr');
-    margRow.innerHTML = `
+        // Marginal Row
+        const margRow = document.createElement('tr');
+        margRow.innerHTML = `
       <td><strong>Attention Marginal</strong></td>
       <td><strong class="text-cyan">${fmt(tw['global']?.mean_delta_W_frob_norm)}</strong></td>
       <td><strong>${fmt(tw['sliding_window']?.mean_delta_W_frob_norm)}</strong></td>
       <td>—</td>
     `;
-    elements.m5FrobTableBody.appendChild(margRow);
+        elements.m5FrobTableBody.appendChild(margRow);
 
-    // Dynamics Grid (Delta M / Delta D)
-    bands.forEach(b => {
-      const gKey = `${b.key}_x_global`;
-      const sKey = `${b.key}_x_sliding_window`;
-      const row = document.createElement('tr');
+        // Dynamics Grid (Delta M / Delta D)
+        bands.forEach(b => {
+          const gKey = `${b.key}_x_global`;
+          const sKey = `${b.key}_x_sliding_window`;
+          const row = document.createElement('tr');
 
-      const mG = fmt(tw[gKey]?.mean_delta_M);
-      const mS = fmt(tw[sKey]?.mean_delta_M);
-      const dG = fmt(tw[gKey]?.mean_delta_D);
-      const dS = fmt(tw[sKey]?.mean_delta_D);
+          const mG = fmt(tw[gKey]?.mean_delta_M);
+          const mS = fmt(tw[sKey]?.mean_delta_M);
+          const dG = fmt(tw[gKey]?.mean_delta_D);
+          const dS = fmt(tw[sKey]?.mean_delta_D);
 
-      row.innerHTML = `
+          row.innerHTML = `
         <td><strong>${b.label}</strong></td>
         <td><code>${mG}</code> / <code>${mS}</code></td>
         <td><code>${dG}</code> / <code>${dS}</code></td>
       `;
-      elements.m5DynTableBody.appendChild(row);
-    });
-  }
+          elements.m5DynTableBody.appendChild(row);
+        });
+      }
 
   // =========================================================================
   // Tab 7: 294 Layer Explorer (Complete Raw Data Inspector)
   // =========================================================================
   function renderExplorer() {
-    if (!state.data || !state.data.extended_geometric_metrics) return;
-    const modelKey = state.explorer.model;
-    const ext = state.data.extended_geometric_metrics[modelKey];
-    if (!ext || !ext.per_layer_summary) return;
+        if (!state.data || !state.data.extended_geometric_metrics) return;
+        const modelKey = state.explorer.model;
+        const ext = state.data.extended_geometric_metrics[modelKey];
+        if (!ext || !ext.per_layer_summary) return;
 
-    let rows = [...ext.per_layer_summary];
+        let rows = [...ext.per_layer_summary];
 
-    // Filter by Module Type
-    if (state.explorer.moduleType !== 'ALL') {
-      rows = rows.filter(r => r.module_type === state.explorer.moduleType);
-    }
+        // Filter by Module Type
+        if (state.explorer.moduleType !== 'ALL') {
+          rows = rows.filter(r => r.module_type === state.explorer.moduleType);
+        }
 
-    // Filter by Attention Type
-    if (state.explorer.attType !== 'ALL') {
-      rows = rows.filter(r => r.attention_type === state.explorer.attType);
-    }
+        // Filter by Attention Type
+        if (state.explorer.attType !== 'ALL') {
+          rows = rows.filter(r => r.attention_type === state.explorer.attType);
+        }
 
-    // Filter by Search Query
-    if (state.explorer.search) {
-      const q = state.explorer.search.toLowerCase();
-      rows = rows.filter(r =>
-        r.module_name.toLowerCase().includes(q) ||
-        String(r.layer_num).includes(q) ||
-        r.module_type.toLowerCase().includes(q)
-      );
-    }
+        // Filter by Search Query
+        if (state.explorer.search) {
+          const q = state.explorer.search.toLowerCase();
+          rows = rows.filter(r =>
+            r.module_name.toLowerCase().includes(q) ||
+            String(r.layer_num).includes(q) ||
+            r.module_type.toLowerCase().includes(q)
+          );
+        }
 
-    // Sort Rows
-    const col = state.explorer.sortCol;
-    const asc = state.explorer.sortAsc;
-    rows.sort((a, b) => {
-      let vA = a[col];
-      let vB = b[col];
-      if (typeof vA === 'string') vA = vA.toLowerCase();
-      if (typeof vB === 'string') vB = vB.toLowerCase();
-      if (vA < vB) return asc ? -1 : 1;
-      if (vA > vB) return asc ? 1 : -1;
-      return 0;
-    });
+        // Sort Rows
+        const col = state.explorer.sortCol;
+        const asc = state.explorer.sortAsc;
+        rows.sort((a, b) => {
+          let vA = a[col];
+          let vB = b[col];
+          if (typeof vA === 'string') vA = vA.toLowerCase();
+          if (typeof vB === 'string') vB = vB.toLowerCase();
+          if (vA < vB) return asc ? -1 : 1;
+          if (vA > vB) return asc ? 1 : -1;
+          return 0;
+        });
 
-    state.explorer.filteredRows = rows;
-    elements.filterCountBadge.textContent = `Showing ${rows.length} of 294 Projections`;
+        state.explorer.filteredRows = rows;
+        elements.filterCountBadge.textContent = `Showing ${rows.length} of 294 Projections`;
 
-    elements.explorerTableBody.innerHTML = '';
-    rows.forEach((r, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+        elements.explorerTableBody.innerHTML = '';
+        rows.forEach((r, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
         <td><span class="badge badge-info">L${r.layer_num}</span></td>
         <td><strong><code>${r.module_type}</code></strong></td>
         <td><span class="tag">${r.attention_type}</span></td>
@@ -646,22 +675,22 @@
         <td><button class="btn btn-secondary btn-xs" data-inspect-idx="${idx}">Inspect</button></td>
       `;
 
-      tr.onclick = (e) => {
-        if (!e.target.closest('button')) {
-          showLayerModal(r);
-        }
-      };
-      tr.querySelector('button').onclick = () => showLayerModal(r);
+          tr.onclick = (e) => {
+            if (!e.target.closest('button')) {
+              showLayerModal(r);
+            }
+          };
+          tr.querySelector('button').onclick = () => showLayerModal(r);
 
-      elements.explorerTableBody.appendChild(tr);
-    });
-  }
+          elements.explorerTableBody.appendChild(tr);
+        });
+      }
 
   function showLayerModal(layerData) {
-    elements.modalLayerBadge.textContent = `Layer ${layerData.layer_num} • ${layerData.attention_type}`;
-    elements.modalTitle.textContent = layerData.module_name;
+        elements.modalLayerBadge.textContent = `Layer ${layerData.layer_num} • ${layerData.attention_type}`;
+        elements.modalTitle.textContent = layerData.module_name;
 
-    elements.modalBody.innerHTML = `
+        elements.modalBody.innerHTML = `
       <div class="modal-metric-grid">
         <div class="modal-metric-item">
           <span class="modal-metric-label">Module Type</span>
@@ -706,162 +735,162 @@
       </div>
     `;
 
-    elements.modalBackdrop.classList.add('active');
-  }
+        elements.modalBackdrop.classList.add('active');
+      }
 
   function exportVisibleAsCsv() {
-    const rows = state.explorer.filteredRows;
-    if (!rows || rows.length === 0) return;
+        const rows = state.explorer.filteredRows;
+        if (!rows || rows.length === 0) return;
 
-    const headers = [
-      'module_name',
-      'layer_num',
-      'module_type',
-      'attention_type',
-      'r_eff_delta_V',
-      'r_eff_delta_W',
-      'rank_inflation_ratio',
-      'map_magnitude_ratio',
-      'map_cosine_sim',
-      'spectral_entropy',
-      'top1_dominance',
-      'bora_asymmetry_ratio'
-    ];
+        const headers = [
+          'module_name',
+          'layer_num',
+          'module_type',
+          'attention_type',
+          'r_eff_delta_V',
+          'r_eff_delta_W',
+          'rank_inflation_ratio',
+          'map_magnitude_ratio',
+          'map_cosine_sim',
+          'spectral_entropy',
+          'top1_dominance',
+          'bora_asymmetry_ratio'
+        ];
 
-    const csvLines = [headers.join(',')];
-    rows.forEach(r => {
-      const line = headers.map(h => r[h] !== undefined ? r[h] : '').join(',');
-      csvLines.push(line);
-    });
+        const csvLines = [headers.join(',')];
+        rows.forEach(r => {
+          const line = headers.map(h => r[h] !== undefined ? r[h] : '').join(',');
+          csvLines.push(line);
+        });
 
-    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dora_layers_${state.explorer.model}_${rows.length}modules.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+        const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dora_layers_${state.explorer.model}_${rows.length}modules.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
 
   // =========================================================================
   // Event Handlers
   // =========================================================================
   function setupEventListeners() {
-    // Navigation Tabs
-    elements.navTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        elements.navTabs.forEach(t => t.classList.remove('active'));
-        elements.tabContents.forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        const tabId = tab.getAttribute('data-tab');
-        document.getElementById(tabId).classList.add('active');
-        state.activeTab = tabId;
-      });
-    });
+        // Navigation Tabs
+        elements.navTabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            elements.navTabs.forEach(t => t.classList.remove('active'));
+            elements.tabContents.forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+            state.activeTab = tabId;
+          });
+        });
 
-    // File Input
-    elements.jsonFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        try {
-          const json = JSON.parse(evt.target.result);
-          loadData(json, file.name);
-        } catch (err) {
-          alert('Error parsing JSON file: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    // Module 1 Model Selector
-    elements.m1Select.addEventListener('change', (e) => {
-      state.m1Model = e.target.value;
-      renderModule1();
-    });
-
-    // Module 5 Model Selector
-    elements.m5Select.addEventListener('change', (e) => {
-      state.m5Model = e.target.value;
-      renderModule5();
-    });
-
-    // Explorer Filters
-    elements.filterModel.addEventListener('change', (e) => {
-      state.explorer.model = e.target.value;
-      renderExplorer();
-    });
-
-    elements.filterModuleType.addEventListener('change', (e) => {
-      state.explorer.moduleType = e.target.value;
-      renderExplorer();
-    });
-
-    elements.filterAttType.addEventListener('change', (e) => {
-      state.explorer.attType = e.target.value;
-      renderExplorer();
-    });
-
-    elements.filterSearch.addEventListener('input', (e) => {
-      state.explorer.search = e.target.value;
-      renderExplorer();
-    });
-
-    // Explorer Column Sort
-    elements.explorerHeaders.forEach(th => {
-      th.addEventListener('click', () => {
-        const col = th.getAttribute('data-sort');
-        if (state.explorer.sortCol === col) {
-          state.explorer.sortAsc = !state.explorer.sortAsc;
-        } else {
-          state.explorer.sortCol = col;
-          state.explorer.sortAsc = true;
-        }
-        renderExplorer();
-      });
-    });
-
-    // Export CSV
-    elements.btnExportCsv.addEventListener('click', exportVisibleAsCsv);
-
-    // Modal Close
-    elements.modalCloseBtn.addEventListener('click', () => {
-      elements.modalBackdrop.classList.remove('active');
-    });
-
-    elements.modalBackdrop.addEventListener('click', (e) => {
-      if (e.target === elements.modalBackdrop) {
-        elements.modalBackdrop.classList.remove('active');
-      }
-    });
-
-    // Drag and Drop on Body
-    window.addEventListener('dragover', (e) => e.preventDefault());
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        if (file.name.endsWith('.json')) {
+        // File Input
+        elements.jsonFileInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
           const reader = new FileReader();
           reader.onload = (evt) => {
             try {
               const json = JSON.parse(evt.target.result);
               loadData(json, file.name);
             } catch (err) {
-              alert('Error reading dropped JSON: ' + err.message);
+              alert('Error parsing JSON file: ' + err.message);
             }
           };
           reader.readAsText(file);
-        }
+        });
+
+        // Module 1 Model Selector
+        elements.m1Select.addEventListener('change', (e) => {
+          state.m1Model = e.target.value;
+          renderModule1();
+        });
+
+        // Module 5 Model Selector
+        elements.m5Select.addEventListener('change', (e) => {
+          state.m5Model = e.target.value;
+          renderModule5();
+        });
+
+        // Explorer Filters
+        elements.filterModel.addEventListener('change', (e) => {
+          state.explorer.model = e.target.value;
+          renderExplorer();
+        });
+
+        elements.filterModuleType.addEventListener('change', (e) => {
+          state.explorer.moduleType = e.target.value;
+          renderExplorer();
+        });
+
+        elements.filterAttType.addEventListener('change', (e) => {
+          state.explorer.attType = e.target.value;
+          renderExplorer();
+        });
+
+        elements.filterSearch.addEventListener('input', (e) => {
+          state.explorer.search = e.target.value;
+          renderExplorer();
+        });
+
+        // Explorer Column Sort
+        elements.explorerHeaders.forEach(th => {
+          th.addEventListener('click', () => {
+            const col = th.getAttribute('data-sort');
+            if (state.explorer.sortCol === col) {
+              state.explorer.sortAsc = !state.explorer.sortAsc;
+            } else {
+              state.explorer.sortCol = col;
+              state.explorer.sortAsc = true;
+            }
+            renderExplorer();
+          });
+        });
+
+        // Export CSV
+        elements.btnExportCsv.addEventListener('click', exportVisibleAsCsv);
+
+        // Modal Close
+        elements.modalCloseBtn.addEventListener('click', () => {
+          elements.modalBackdrop.classList.remove('active');
+        });
+
+        elements.modalBackdrop.addEventListener('click', (e) => {
+          if (e.target === elements.modalBackdrop) {
+            elements.modalBackdrop.classList.remove('active');
+          }
+        });
+
+        // Drag and Drop on Body
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (file.name.endsWith('.json')) {
+              const reader = new FileReader();
+              reader.onload = (evt) => {
+                try {
+                  const json = JSON.parse(evt.target.result);
+                  loadData(json, file.name);
+                } catch (err) {
+                  alert('Error reading dropped JSON: ' + err.message);
+                }
+              };
+              reader.readAsText(file);
+            }
+          }
+        });
       }
-    });
-  }
 
   // Run on DOM Ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  }) ();

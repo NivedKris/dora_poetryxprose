@@ -51,6 +51,10 @@
             <span class="meta-label">Status</span>
             <span class="status-badge" id="data-status-badge">Loaded (29,619 Lines)</span>
           </div>
+          <a href="./dora_results_and_evaluation.xlsx" download="dora_results_and_evaluation.xlsx" class="btn-excel-download" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; padding:8px 16px; border-radius:8px; background:linear-gradient(135deg, #059669, #047857); color:#ffffff; font-weight:600; font-size:12px; box-shadow:0 4px 12px rgba(5,150,105,0.3); border:1px solid #10b981; transition:all 0.2s ease;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download Excel Workbook (.xlsx)
+          </a>
         </div>
       </div>
     </header>
@@ -167,6 +171,43 @@
                   </tr>
                 </thead>
                 <tbody id="milestone-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+        <!-- Downstream Translation Generation Benchmarks Section -->
+        <div class="card card-wide mt-6" id="card-test-eval">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Downstream Machine Translation Test Benchmarks (BLEU & chrF++)</h3>
+              <p class="card-desc">Greedy autoregressive generation (max_new_tokens=128, repetition_penalty=1.15, no_repeat_ngram_size=4) evaluated on held-out test sets</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="./dora_results_and_evaluation.xlsx" download="dora_results_and_evaluation.xlsx" class="btn-excel-download" style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; font-size:11px; border-radius:6px; background:#059669; color:#fff; text-decoration:none; font-weight:600;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Excel (.xlsx)
+              </a>
+              <div class="badge badge-emerald">Verified Multi-GPU</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table" id="test-eval-table">
+                <thead>
+                  <tr>
+                    <th>Model Split</th>
+                    <th>Domain</th>
+                    <th>Benchmark Set</th>
+                    <th>Direction</th>
+                    <th>Samples</th>
+                    <th>SacreBLEU (flores200)</th>
+                    <th>SacreBLEU (13a)</th>
+                    <th>chrF++ (word_order=2)</th>
+                    <th>Length Ratio</th>
+                    <th>Speed</th>
+                  </tr>
+                </thead>
+                <tbody id="test-eval-table-body">
                   <!-- Populated by JS -->
                 </tbody>
               </table>
